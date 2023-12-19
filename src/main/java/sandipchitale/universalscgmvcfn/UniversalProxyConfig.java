@@ -57,6 +57,8 @@ public class UniversalProxyConfig {
                     return request;
                 })
                 .before(removeRequestHeader(X_METHOD))
+                .before(removeRequestHeader(PerRequestTimeoutRestClientProxyExchange.X_CONNECT_TIMEOUT_MILLIS))
+                .before(removeRequestHeader(PerRequestTimeoutRestClientProxyExchange.X_READ_TIMEOUT_MILLIS))
                 .build();
     }
 }

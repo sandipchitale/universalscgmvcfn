@@ -27,8 +27,8 @@ import java.util.Map;
 @Component
 public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExchange {
 
-    private static final String X_CONNECT_TIMEOUT_MILLIS = "X-CONNECT-TIMEOUT-MILLIS";
-    private static final String X_READ_TIMEOUT_MILLIS = "X-READ-TIMEOUT-MILLIS";
+    static final String X_CONNECT_TIMEOUT_MILLIS = "X-CONNECT-TIMEOUT-MILLIS";
+    static final String X_READ_TIMEOUT_MILLIS = "X-READ-TIMEOUT-MILLIS";
 
     private final GatewayMvcProperties gatewayMvcProperties;
     private final SslBundles sslBundles;

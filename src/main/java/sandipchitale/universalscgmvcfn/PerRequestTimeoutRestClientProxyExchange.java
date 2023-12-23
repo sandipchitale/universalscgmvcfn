@@ -3,7 +3,8 @@ package sandipchitale.universalscgmvcfn;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.ssl.SslBundles;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.client.ClientHttpRequestFactories;
+import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
 import org.springframework.cloud.gateway.server.mvc.config.GatewayMvcProperties;
 import org.springframework.cloud.gateway.server.mvc.handler.RestClientProxyExchange;
 import org.springframework.http.HttpHeaders;
@@ -30,6 +31,7 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
     static final String X_CONNECT_TIMEOUT_MILLIS = "X-CONNECT-TIMEOUT-MILLIS";
     static final String X_READ_TIMEOUT_MILLIS = "X-READ-TIMEOUT-MILLIS";
 
+    private final RestClient.Builder restClientBuilder;
     private final GatewayMvcProperties gatewayMvcProperties;
     private final SslBundles sslBundles;
 
@@ -42,6 +44,7 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
                                                     GatewayMvcProperties gatewayMvcProperties,
                                                     SslBundles sslBundles) {
         super(restClientBuilder.build());
+        this.restClientBuilder = restClientBuilder;
         this.gatewayMvcProperties = gatewayMvcProperties;
         this.sslBundles = sslBundles;
 
@@ -110,28 +113,21 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
         String connectTimeoutMillisString = httpServletRequest.getHeader(X_CONNECT_TIMEOUT_MILLIS);
         String readTimeoutMillisString = httpServletRequest.getHeader(X_READ_TIMEOUT_MILLIS);
         if (connectTimeoutMillisString == null && readTimeoutMillisString == null) {
-            // Return default one
+            // Return null so that default one will be used.
             return null;
         } else {
             Duration connectionTimeout = connectTimeoutMillisString == null ? null : Duration.ofMillis(Long.parseLong(connectTimeoutMillisString));
             Duration readTimeout = readTimeoutMillisString == null ? null : Duration.ofMillis(Long.parseLong(readTimeoutMillisString));
 
-            RestTemplateBuilder restTemplateBuilder = new RestTemplateBuilder();
+            ClientHttpRequestFactorySettings clientHttpRequestFactorySettings =
+                    ClientHttpRequestFactorySettings.DEFAULTS;
+
             if (connectionTimeout != null) {
-                if (connectionTimeout.equals(Duration.ZERO)) {
-                    // 0 indicates infinite connect	 timeout
-                    restTemplateBuilder = restTemplateBuilder.setConnectTimeout(Duration.ofMillis(Long.MAX_VALUE));
-                } else {
-                    restTemplateBuilder = restTemplateBuilder.setConnectTimeout(connectionTimeout);
-                }
+                clientHttpRequestFactorySettings = clientHttpRequestFactorySettings.withConnectTimeout(connectionTimeout);
             }
+
             if (readTimeout != null) {
-                if (readTimeout.equals(Duration.ZERO)) {
-                    // 0 indicates infinite read timeout
-                    restTemplateBuilder = restTemplateBuilder.setReadTimeout(Duration.ofMillis(Long.MAX_VALUE));
-                } else {
-                    restTemplateBuilder = restTemplateBuilder.setReadTimeout(readTimeout);
-                }
+                clientHttpRequestFactorySettings = clientHttpRequestFactorySettings.withReadTimeout(readTimeout);
             }
 
             SslBundle sslBundle = null;
@@ -139,10 +135,10 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
                 sslBundle = sslBundles.getBundle(gatewayMvcProperties.getHttpClient().getSslBundle());
             }
             if (sslBundle != null) {
-                restTemplateBuilder = restTemplateBuilder.setSslBundle(sslBundle);
+                clientHttpRequestFactorySettings = clientHttpRequestFactorySettings.withSslBundle(sslBundle);
             }
 
-            return RestClient.create(restTemplateBuilder.build());
+            return restClientBuilder.requestFactory(ClientHttpRequestFactories.get(clientHttpRequestFactorySettings)).build();
         }
     }
 }

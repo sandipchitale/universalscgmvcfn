@@ -12,8 +12,8 @@ A universal streaming proxy using Spring Cloud Gateway MVC.fn.
 
 ## Optional features
 
-`X-CONNECT-TIMEOUT-MILLIS` header - set the connect timeout in milliseconds. A value of 0 means infinite connect timeout. On connect timeout, a `Gateway Timeout: I/O error on GET request for "proxyuri": Connect timed out` response is returned.
-`X-READ-TIMEOUT-MILLIS` header - set the read timeout in milliseconds. A value of 0 means infinite read timeout. On connect timeout, a `Gateway Timeout: I/O error on GET request for "proxyuri": Read timed out` response is returned.
+- `X-CONNECT-TIMEOUT-MILLIS` header - set the connect timeout in milliseconds. A value of 0 means infinite connect timeout. On connect timeout, a `Gateway Timeout: I/O error on GET request for "proxyuri": Connect timed out` response is returned.
+- `X-READ-TIMEOUT-MILLIS` header - set the read timeout in milliseconds. A value of 0 means infinite read timeout. On connect timeout, a `Gateway Timeout: I/O error on GET request for "proxyuri": Read timed out` response is returned.
 
 ## Examples
 

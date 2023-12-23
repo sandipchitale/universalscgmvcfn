@@ -112,9 +112,6 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
                 request,
                 clientResponse);
     }
-
-
-
     
     private RestClient getRestClient(HttpServletRequest httpServletRequest, GatewayMvcProperties gatewayMvcProperties, SslBundles sslBundles) {
         String connectTimeoutMillisString = httpServletRequest.getHeader(X_CONNECT_TIMEOUT_MILLIS);

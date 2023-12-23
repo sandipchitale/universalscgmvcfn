@@ -27,6 +27,9 @@ import java.util.Map;
 
 @Component
 public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExchange {
+    public static final String MAX_TIMEOUT_STRING = "0";
+
+    record RestClientCacheKey(String connectTimeoutMillisString, String readTimeoutMillisString, String sslBundleString){};
 
     static final String X_CONNECT_TIMEOUT_MILLIS = "X-CONNECT-TIMEOUT-MILLIS";
     static final String X_READ_TIMEOUT_MILLIS = "X-READ-TIMEOUT-MILLIS";
@@ -39,6 +42,8 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
     private final Map<Long, RestClient> xTimeoutMillisToRestClientMap = new HashMap<>();
     private final Method superCopyBody;
     private final Method superDoExchange;
+
+    private final Map<RestClientCacheKey, RestClient> restClientCache = new HashMap<>();
 
     public PerRequestTimeoutRestClientProxyExchange(RestClient.Builder restClientBuilder,
                                                     GatewayMvcProperties gatewayMvcProperties,
@@ -109,6 +114,9 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
                 clientResponse);
     }
 
+
+
+    
     private RestClient getRestClient(HttpServletRequest httpServletRequest, GatewayMvcProperties gatewayMvcProperties, SslBundles sslBundles) {
         String connectTimeoutMillisString = httpServletRequest.getHeader(X_CONNECT_TIMEOUT_MILLIS);
         String readTimeoutMillisString = httpServletRequest.getHeader(X_READ_TIMEOUT_MILLIS);
@@ -116,6 +124,22 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
             // Return null so that default one will be used.
             return null;
         } else {
+            if (MAX_TIMEOUT_STRING.equals(connectTimeoutMillisString)) {
+                connectTimeoutMillisString = String.valueOf(Long.MAX_VALUE);
+            }
+            if (MAX_TIMEOUT_STRING.equals(readTimeoutMillisString)) {
+                readTimeoutMillisString = String.valueOf(Long.MAX_VALUE);
+            }
+            String sslBundleString = gatewayMvcProperties.getHttpClient().getSslBundle();
+
+            RestClientCacheKey key = new RestClientCacheKey(connectTimeoutMillisString, readTimeoutMillisString, sslBundleString);
+
+            RestClient restClient = restClientCache.get(key);
+
+            if (restClient != null) {
+                return restClient;
+            }
+
             Duration connectionTimeout = connectTimeoutMillisString == null ? null : Duration.ofMillis(Long.parseLong(connectTimeoutMillisString));
             Duration readTimeout = readTimeoutMillisString == null ? null : Duration.ofMillis(Long.parseLong(readTimeoutMillisString));
 
@@ -131,14 +155,18 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
             }
 
             SslBundle sslBundle = null;
-            if (StringUtils.hasText(gatewayMvcProperties.getHttpClient().getSslBundle())) {
-                sslBundle = sslBundles.getBundle(gatewayMvcProperties.getHttpClient().getSslBundle());
+
+            if (StringUtils.hasText(sslBundleString)) {
+                sslBundle = sslBundles.getBundle(sslBundleString);
             }
             if (sslBundle != null) {
                 clientHttpRequestFactorySettings = clientHttpRequestFactorySettings.withSslBundle(sslBundle);
             }
 
-            return restClientBuilder.requestFactory(ClientHttpRequestFactories.get(clientHttpRequestFactorySettings)).build();
+            restClient = restClientBuilder.requestFactory(ClientHttpRequestFactories.get(clientHttpRequestFactorySettings)).build();
+            restClientCache.put(key, restClient);
+
+            return restClient;
         }
     }
 }

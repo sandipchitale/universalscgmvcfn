@@ -39,7 +39,6 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
     private final SslBundles sslBundles;
 
     // Cache
-    private final Map<Long, RestClient> xTimeoutMillisToRestClientMap = new HashMap<>();
     private final Method superCopyBody;
     private final Method superDoExchange;
 

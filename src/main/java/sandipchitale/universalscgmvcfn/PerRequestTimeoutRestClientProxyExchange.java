@@ -75,6 +75,7 @@ public class PerRequestTimeoutRestClientProxyExchange extends RestClientProxyExc
                         .uri(request.getUri())
                         .headers((HttpHeaders httpHeaders) -> {
                             httpHeaders.putAll(request.getHeaders());
+                            httpHeaders.remove(HttpHeaders.CONTENT_LENGTH);
                         })
                         .body((OutputStream outputStream) -> {
                             copyBody(superCopyBody, request, outputStream);

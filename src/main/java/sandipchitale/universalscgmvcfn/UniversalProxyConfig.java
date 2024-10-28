@@ -1,23 +1,23 @@
 package sandipchitale.universalscgmvcfn;
 
+import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
+import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
+import static org.springframework.web.servlet.function.RequestPredicates.path;
+
+import java.net.URI;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 import org.springframework.cloud.gateway.server.mvc.common.MvcUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
-
-import java.net.URI;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import static org.springframework.cloud.gateway.server.mvc.filter.BeforeFilterFunctions.removeRequestHeader;
-import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
-import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions.http;
-import static org.springframework.web.servlet.function.RequestPredicates.path;
 
 @Configuration
 public class UniversalProxyConfig {
@@ -56,9 +56,15 @@ public class UniversalProxyConfig {
                     MvcUtils.setRequestUrl(request, uri);
                     return request;
                 })
-                .before(removeRequestHeader(X_METHOD))
-                .before(removeRequestHeader(PerRequestTimeoutRestClientProxyExchange.X_CONNECT_TIMEOUT_MILLIS))
-                .before(removeRequestHeader(PerRequestTimeoutRestClientProxyExchange.X_READ_TIMEOUT_MILLIS))
+                .before((ServerRequest serverRequest) -> {
+                    return ServerRequest
+                            .from(serverRequest).headers((HttpHeaders httpHeaders) -> {
+                                httpHeaders.remove(X_METHOD);
+                                httpHeaders.remove(PerRequestTimeoutRestClientProxyExchange.X_CONNECT_TIMEOUT_MILLIS);
+                                httpHeaders.remove(PerRequestTimeoutRestClientProxyExchange.X_READ_TIMEOUT_MILLIS);
+                            })
+                            .build();
+                })
                 .build();
     }
 }
